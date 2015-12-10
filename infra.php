@@ -2,10 +2,15 @@
 namespace infrajs\controller;
 use infrajs\path\Path;
 use infrajs\event\Event;
-use infrajs\layer\div\Div;
+use infrajs\template\Template;
 
+/**
+ * div, divs, divtpl
+ *
+ **/
+Path::req('*controller/infra.php');
 Event::handler('oninit', function () {
-	Controller::runAddKeys('divs');
+	Run::runAddKeys('divs');
 	
 	External::add('divs', function (&$now, $ext) {//Если уже есть пропускаем
 		if (!$now) {
@@ -20,7 +25,6 @@ Event::handler('oninit', function () {
 				array_push($now[$i], array('external' => $l));
 			});
 		}
-
 		return $now;
 	});
 }, 'div:layer');
@@ -42,11 +46,28 @@ Event::handler('layer.oncheck', function (&$layer) {
 
 
 Event::handler('layer.oncheck', function (&$layer) {
-	Div::divtpl($layer);
+	if (!isset($layer['divtpl'])) return;
+	$layer['div'] = Template::parse(array($layer['divtpl']), $layer);
 }, 'div:env,config,external');
 
 Event::handler('layer.isshow', function (&$layer) {
 	if (empty($layer['div'])&&!empty($layer['parent'])) return false;
 	//Такой слой игнорируется, события onshow не будет, но обработка пройдёт дальше у других дивов
-	return Div::divcheck($layer);
+	$start = false;
+	if (Run::exec(Controller::$layers, function (&$l) use (&$layer, &$start) {//Пробежка не по слоям на ветке, а по всем слоям обрабатываемых после.. .то есть и на других ветках тоже
+		if (!$start) {
+			if (Each::isEqual($layer, $l)) {
+				$start = true;
+			}
+
+			return;
+		}
+		if (@$l['div'] !== @$layer['div']) return; //ищим совпадение дивов впереди
+		if (Controller::fire('layer.isshow', $l)) {
+			$layer['is_save_branch'] = Layer::isParent($l, $layer);
+			return true;//Слой который дальше показывается в томже диве найден
+		}
+	})) {
+		return false;
+	}
 }, 'div:is');
