@@ -1,49 +1,17 @@
 <?php
 
 //Свойство div
-//div::layerindiv
 
-
-/* Это нужно чтобы скрывать слой.. а на php слои не скрываются
-$store=&Controller::store();
-$store['divs']=array();
-function layerindiv($div,&$layer=null){//Функция в любой момент говорит правду какой слой находится в каком диве
-	$store=&Controller::store();
-	if($layer)$store['divs'][$div]=&$layer;
-	return $store['divs'][$div];
-}
-global $infra;
-Event::listeng('layer.onshow',function(&$layer){
-	if(!Controller::is('show',$layer))return;
-	layerindiv($layer['div'],$layer);
-});
-*/
-
-namespace infrajs\controller\ext;
+namespace infrajs\layer\div;
 
 use infrajs\controller\Controller;
+use infrajs\controller\Each;
 
 class div
 {
 	public static function init()
 	{
-		Controller::runAddKeys('divs');
-		external::add('divs', function (&$now, $ext) {//Если уже есть пропускаем
-			if (!$now) {
-				$now = array();
-			}
-			foreach ($ext as $i => $v) {
-				if (isset($now[$i])) {
-					continue;
-				}
-				$now[$i] = array();
-				Each::fora($ext[$i], function (&$l) use (&$now, $i) {
-					array_push($now[$i], array('external' => $l));
-				});
-			}
-
-			return $now;
-		});
+		
 	}
 	public static function divtpl(&$layer)
 	{
@@ -56,9 +24,9 @@ class div
 	{
 
 		$start = false;
-		if (Controller::run(Controller::getWorkLayers(), function (&$l) use (&$layer, &$start) {//Пробежка не по слоям на ветке, а по всем слоям обрабатываемых после.. .то есть и на других ветках тоже
+		if (Controller::run(Controller::$layers, function (&$l) use (&$layer, &$start) {//Пробежка не по слоям на ветке, а по всем слоям обрабатываемых после.. .то есть и на других ветках тоже
 			if (!$start) {
-				if (infra_isEqual($layer, $l)) {
+				if (Each::isEqual($layer, $l)) {
 					$start = true;
 				}
 
